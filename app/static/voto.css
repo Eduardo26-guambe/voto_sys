@@ -1,0 +1,39 @@
+body{
+display: flex;
+justify-content: center;
+align-items: center;
+height: 100vh;
+}
+
+.container{
+    box-shadow: inset 0px 0px 10px #000;
+    padding: 10px;
+    width: 350px;
+    border-radius: 4px;
+    background: linear-gradient( 115deg, #2323f0a6, #1cea1caa, #00ffffa8);
+}
+fieldset {
+    display: flex;
+    flex-direction: column;
+    border-radius: 5px;
+}
+fieldset label{
+    margin-bottom: 5px;
+    display: block;
+}
+button{
+    margin-top: 10px;
+    padding: 5px;
+    border-radius: 4px;
+    background-color: #2323f0a6;
+    color: #f4f4f4;;  
+    border: none;
+    width: 100%;
+}
+
+.usname{
+    color: #2323f0a6;
+}
+.uslogado{
+    color: #f4f4f4;
+}
