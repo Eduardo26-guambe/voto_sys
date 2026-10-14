@@ -114,3 +114,6 @@ websockets==15.0.1
 Werkzeug==3.1.8
 xkbregistry==0.3
 yt-dlp==2026.8.19
+git add requirements.txt
+git commit -m "Adiciona requirements.txt"
+git push origin main
