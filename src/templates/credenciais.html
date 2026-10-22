@@ -1,0 +1,56 @@
+{% load static %}
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#142c27">
+    <title>Acesso restrito · Voto</title>
+    <link rel="stylesheet" href="{% static 'auth.css' %}">
+</head>
+<body>
+    <div class="auth-layout">
+        <aside class="auth-aside">
+            <div class="brand"><span class="brand-mark" aria-hidden="true">V</span><span>VOTO<span aria-hidden="true">.</span></span></div>
+            <div class="aside-copy">
+                <p class="aside-kicker">Acesso reservado</p>
+                <h2>Transparência em cada voto.</h2>
+                <p>Os resultados estão disponíveis apenas para pessoas autorizadas.</p>
+            </div>
+            <p class="aside-footer">Uma plataforma de participação cívica.</p>
+        </aside>
+        <main class="auth-main">
+            <section class="auth-card" aria-labelledby="page-title">
+                <h1 id="page-title">Área administrativa</h1>
+                <p class="auth-description">Introduza as credenciais autorizadas para consultar os resultados.</p>
+
+                {% if messages %}
+                    {% for message in messages %}
+                       <div class="alert" role="alert">{{message}}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <form action="{% url 'admin_render' %}" method="post">
+                    {% csrf_token %}
+                    <label class="field">Utilizador
+                        <input class="input" type="text" name="user" placeholder="Nome de utilizador" autocomplete="username" required>
+                    </label>
+                    <label class="field">Chave de acesso
+                        <input class="input" type="password" name="chave" placeholder="Introduza a sua chave" autocomplete="current-password" required id="pass">
+                    </label>
+                    <label class="password-toggle"><input type="checkbox" id="check"> Mostrar chave de acesso</label>
+                    <button type="submit">Verificar acesso <span aria-hidden="true">→</span></button>
+                </form>
+                <p class="auth-footer"><a href="{% url 'login_render' %}">Voltar ao início de sessão</a></p>
+            </section>
+        </main>
+    </div>
+    <script>
+        const pass = document.getElementById('pass');
+        const check = document.getElementById('check');
+        check.addEventListener('change', () => {
+            pass.type = check.checked ? 'text' : 'password';
+        });
+    </script>
+</body>
+</html>

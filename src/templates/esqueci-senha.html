@@ -1,0 +1,29 @@
+{% load static %}
+<!doctype html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Recuperar palavra-passe · Voto</title>
+    <link rel="stylesheet" href="{% static 'auth.css' %}">
+</head>
+<body>
+    <main class="auth-main">
+        <section class="auth-card" aria-labelledby="page-title">
+            <h1 id="page-title">Esqueceu a palavra-passe?</h1>
+            <p class="auth-description">Enviaremos um link de recuperação para o e-mail da sua conta.</p>
+            {% if form.errors %}
+                <div class="alert" role="alert">Verifique o e-mail introduzido.</div>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <label class="field" for="{{ form.email.id_for_label }}">E-mail
+                    <input class="input" type="email" name="{{ form.email.html_name }}" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default_if_none:'' }}" autocomplete="email" required>
+                </label>
+                <button type="submit">Enviar link de recuperação <span aria-hidden="true">→</span></button>
+            </form>
+            <p class="auth-footer"><a href="{% url 'login_render' %}">Voltar ao início de sessão</a></p>
+        </section>
+    </main>
+</body>
+</html>
