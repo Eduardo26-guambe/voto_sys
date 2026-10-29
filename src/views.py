@@ -170,7 +170,7 @@ def submeter_voto(request):
             s_votos.objects.create(s_id=secretaria, user_id=request.user)
             e_votos.objects.create(e_id=estatistico, user_id=request.user)
     except IntegrityError:
-        messages.error(request, 'A sua conta já submeteu um voto.')
+        messages.error(request, 'Já submeteu um voto nesta eleição.')
         return redirect('main_render')
 
     messages.success(request, 'O seu voto foi registado.')
