@@ -6,143 +6,208 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resultados da Votação · Sys_voto</title>
     <link rel="stylesheet" href="{% static 'main.css' %}">
+    <!-- Importar Chart.js para os gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Layout Geral com Sidebar */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        .sidebar {
+            width: 260px;
+            background-color: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .sidebar h2 {
+            font-size: 1.1rem;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .sidebar-menu button {
+            width: 100%;
+            text-align: left;
+            padding: 10px 14px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: #475569;
+            transition: all 0.2s;
+        }
+        .sidebar-menu button:hover, .sidebar-menu button.active {
+            background-color: #e2e8f0;
+            color: #0f172a;
+            font-weight: 500;
+        }
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        /* Controle de Visibilidade das Views */
+        .view-section {
+            display: none;
+        }
+        .view-section.active {
+            display: block;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header class="page-header">
+    <div class="app-layout">
+        <!-- Menu Lateral (Aside Bar) -->
+        <aside class="sidebar">
             <div>
-                <p class="eyebrow">Área Administrativa</p>
-                <h1>Resultados da Votação</h1>
+                <p class="eyebrow">Navegação</p>
+                <h2>Modo de Visualização</h2>
             </div>
-            <div class="results-header-actions">
-                {% if nome %}
-                    <p class="results-user">Utilizador: <strong>{{ nome }}</strong></p>
-                {% endif %}
-                <form action="{% url 'sair' %}" method="post">
-                    {% csrf_token %}
-                    <button class="page-header__logout" type="submit">Sair</button>
-                </form>
-            </div>
-        </header>
-
-        <div class="results-grid">
-            {% for cargo, candidatos in resultados_por_cargo %}
-                <section class="results-card">
-                    <h2>{{ cargo }}</h2>
-                    <div class="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Candidato</th>
-                                    <th class="text-right">Votos</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for candidato in candidatos %}
-                                    <tr>
-                                        <td>{{ candidato.nome }}</td>
-                                        <td class="text-right"><strong>{{ candidato.total_votos }}</strong></td>
-                                    </tr>
-                                {% empty %}
-                                    <tr><td colspan="2">Ainda não há candidatos registados.</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            {% endfor %}
-        </div>
-
-        {% if messages %}
-            <ul class="feedback-notices" aria-live="polite">
-                {% for message in messages %}
-                    <li class="{{ message.tags }}">{{ message }}</li>
-                {% endfor %}
+            <ul class="sidebar-menu">
+                <li><button type="button" class="menu-btn active" onclick="switchView('tables')">📋 Ver em Tabelas</button></li>
+                <li><button type="button" class="menu-btn" onclick="switchView('charts')">📊 Ver em Gráficos</button></li>
             </ul>
-        {% endif %}
+            <div style="margin-top: auto;">
+                <a class="text-link" href="{% url 'main_render' %}">← Voltar à votação</a>
+            </div>
+        </aside>
 
-        <div class="feedback-widget">
-            <section class="feedback-chat" id="feedback-chat-panel"
-                     aria-labelledby="feedback-title" hidden>
-                <header class="feedback-chat__header">
-                    <span class="feedback-chat__status" aria-hidden="true"></span>
-                    <div>
-                        <h2 id="feedback-title">Feedback dos utilizadores</h2>
-                        <p>Escolha uma reação para cada mensagem</p>
-                    </div>
-                    <button class="feedback-chat__close" id="feedback-chat-close" type="button"
-                            aria-label="Fechar mensagens">&times;</button>
-                </header>
-                <div class="feedback-chat__messages" aria-live="polite">
-                    {% for feedback in feedbacks %}
-                        <article class="feedback-message feedback-message--received">
-                            <div class="feedback-message__meta">
-                                <strong>{{ feedback.user.get_full_name|default:feedback.user.username }}</strong>
-                                <time datetime="{{ feedback.created_at|date:'c' }}">{{ feedback.created_at|date:'d/m/Y H:i' }}</time>
+        <!-- Conteúdo Principal -->
+        <main class="main-content">
+            <header class="page-header">
+                <div>
+                    <p class="eyebrow">Área Administrativa</p>
+                    <h1>Resultados da Votação</h1>
+                </div>
+                <div class="results-header-actions">
+                    {% if nome %}
+                        <p class="results-user">Utilizador: <strong>{{ nome }}</strong></p>
+                    {% endif %}
+                    <form action="{% url 'sair' %}" method="post">
+                        {% csrf_token %}
+                        <button class="page-header__logout" type="submit">Sair</button>
+                    </form>
+                </div>
+            </header>
+
+            <!-- SEÇÃO 1: VISUALIZAÇÃO EM TABELAS -->
+            <div id="view-tables" class="view-section active">
+                <div class="results-grid">
+                    {% for cargo, candidatos in resultados_por_cargo %}
+                        <section class="results-card">
+                            <h2>{{ cargo }}</h2>
+                            <div class="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Candidato</th>
+                                            <th class="text-right">Votos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for candidato in candidatos %}
+                                            <tr>
+                                                <td>{{ candidato.nome }}</td>
+                                                <td class="text-right"><strong>{{ candidato.total_votos }}</strong></td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr><td colspan="2">Ainda não há candidatos registados.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
                             </div>
-                            <p>{{ feedback.message }}</p>
-                            {% if feedback.reaction %}
-                                <span class="feedback-message__reaction"
-                                      aria-label="Reação enviada: {{ feedback.get_reaction_display }}">
-                                    {{ feedback.get_reaction_display }} Reação enviada
-                                </span>
-                            {% else %}
-                                <div class="feedback-reactions" aria-label="Escolher uma reação">
-                                    {% for reaction, emoji in feedback_reactions %}
-                                        <form action="{% url 'reagir_feedback' feedback.pk %}" method="post">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="reaction" value="{{ reaction }}">
-                                            <button class="feedback-reaction" type="submit"
-                                                    aria-label="Reagir com {{ emoji }}">
-                                                {{ emoji }}
-                                            </button>
-                                        </form>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </article>
-                    {% empty %}
-                        <p class="feedback-inbox__empty">Ainda não recebeu feedbacks.</p>
+                        </section>
                     {% endfor %}
                 </div>
-            </section>
-            <button class="feedback-widget__toggle" id="feedback-chat-toggle" type="button"
-                    aria-label="Abrir feedbacks ({{ feedbacks|length }})"
-                    aria-expanded="false" aria-controls="feedback-chat-panel">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"></path>
-                </svg>
-            </button>
-        </div>
+            </div>
 
-        <div style="margin-top: 30px; text-align: center;">
-            <a class="text-link" href="{% url 'main_render' %}">← Voltar à votação</a>
-        </div>
+            <!-- SEÇÃO 2: VISUALIZAÇÃO EM GRÁFICOS -->
+            <div id="view-charts" class="view-section">
+                <div class="results-grid">
+                    {% for cargo, candidatos in resultados_por_cargo %}
+                        <section class="results-card">
+                            <h2>{{ cargo }} (Gráfico)</h2>
+                            <div style="position: relative; height: 250px; width: 100%;">
+                                <!-- Canvas dinâmico para cada cargo -->
+                                <canvas id="chart-{{ forloop.counter }}"></canvas>
+                            </div>
+                        </section>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if messages %}
+                <ul class="feedback-notices" aria-live="polite">
+                    {% for message in messages %}
+                        <li class="{{ message.tags }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </main>
     </div>
+
+    <!-- Script para Alternar Views e Renderizar os Gráficos -->
     <script>
-        const feedbackToggle = document.getElementById('feedback-chat-toggle');
-        const feedbackPanel = document.getElementById('feedback-chat-panel');
-        const feedbackClose = document.getElementById('feedback-chat-close');
-
-        const setFeedbackPanelOpen = (isOpen) => {
-            feedbackPanel.hidden = !isOpen;
-            feedbackToggle.setAttribute('aria-expanded', String(isOpen));
-            feedbackToggle.setAttribute('aria-label', isOpen ? 'Fechar feedbacks' : 'Abrir feedbacks');
-            if (!isOpen) {
-                feedbackToggle.focus();
+        function switchView(viewType) {
+            // Alternar classes ativas nos botões do menu
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+            if (viewType === 'tables') {
+                document.querySelector('button[onclick*="tables"]').classList.add('active');
+                document.getElementById('view-tables').classList.add('active');
+                document.getElementById('view-charts').classList.remove('active');
             } else {
-                feedbackClose.focus();
+                document.querySelector('button[onclick*="charts"]').classList.add('active');
+                document.getElementById('view-charts').classList.add('active');
+                document.getElementById('view-tables').classList.remove('active');
             }
-        };
+        }
 
-        feedbackToggle.addEventListener('click', () => {
-            setFeedbackPanelOpen(feedbackPanel.hidden);
-        });
-        feedbackClose.addEventListener('click', () => setFeedbackPanelOpen(false));
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && !feedbackPanel.hidden) {
-                setFeedbackPanelOpen(false);
-            }
+        // Dados passados do Django para gerar os gráficos dinamicamente via JS
+        {% for cargo, candidatos in resultados_por_cargo %}
+            const labels_{{ forloop.counter }} = [{% for c in candidatos %}"{{ c.nome }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+            const data_{{ forloop.counter }} = [{% for c in candidatos %}{{ c.total_votos }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+        {% endfor %}
+
+        // Inicializar os gráficos assim que a página carregar
+        window.addEventListener('DOMContentLoaded', () => {
+            {% for cargo, candidatos in resultados_por_cargo %}
+                const ctx_{{ forloop.counter }} = document.getElementById('chart-{{ forloop.counter }}').getContext('2d');
+                new Chart(ctx_{{ forloop.counter }}, {
+                    type: 'bar',
+                    data: {
+                        labels: labels_{{ forloop.counter }},
+                        datasets: [{
+                            label: 'Total de Votos',
+                            data: data_{{ forloop.counter }},
+                            backgroundColor: 'rgba(16, 124, 65, 0.7)',
+                            borderColor: 'rgba(16, 124, 65, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            {% endfor %}
         });
     </script>
 </body>
