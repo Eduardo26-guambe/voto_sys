@@ -53,7 +53,7 @@ def registro_render(request):
         email = request.POST.get('email', '').strip()
         senha = request.POST.get('senha', '')
 
-        dados_user= {
+        dados_user = {
             'nome': nome,
             'email': email,
             'senha': senha
@@ -74,7 +74,7 @@ def registro_render(request):
         except ValidationError as error:
             for message in error.messages:
                 messages.error(request, message)
-            return render(request, 'res.html')
+            return render(request, 'res.html', dados_user)
 
         User.objects.create_user(username=nome, email=email, password=senha)
         messages.success(request, 'Conta criada. Já pode iniciar sessão.')
@@ -187,16 +187,19 @@ def sair(request):
 @never_cache
 @user_passes_test(lambda user: user.is_superuser, login_url='admin_render')
 def resultados(request):
+    # Organiza os dados annotados por cargo para consumo direto no template (tabelas e gráficos)
+    resultados_por_cargo = (
+        ('Presidência', pres.objects.annotate(total_votos=Count('p_votos'))),
+        ('Secretariado', sec.objects.annotate(total_votos=Count('s_votos'))),
+        ('Estatística', est.objects.annotate(total_votos=Count('e_votos'))),
+    )
+
     return render(
         request,
         'resultados.html',
         {
-            'resultados_por_cargo': (
-                ('Presidência', pres.objects.annotate(total_votos=Count('p_votos'))),
-                ('Secretariado', sec.objects.annotate(total_votos=Count('s_votos'))),
-                ('Estatística', est.objects.annotate(total_votos=Count('e_votos'))),
-            ),
-            'nome': request.user.get_username(),
+            'resultados_por_cargo': resultados_por_cargo,
+            'nome': request.user.get_full_name() or request.user.get_username(),
             'feedbacks': Feedback.objects.select_related('user').all(),
             'feedback_reactions': Feedback.REACTION_CHOICES,
         },
